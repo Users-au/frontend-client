@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users.au Client — Vanilla JS Example</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      padding: 2.5rem;
+      max-width: 440px;
+      width: 100%;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #1a202c; }
+    .subtitle { color: #718096; font-size: 0.9rem; margin-bottom: 2rem; }
+    .avatar { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem; }
+    .user-name { font-size: 1.2rem; font-weight: 600; color: #2d3748; }
+    .user-email { color: #718096; font-size: 0.875rem; margin-top: 0.25rem; }
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin: 1rem 0;
+    }
+    .status-badge.authed { background: #c6f6d5; color: #22543d; }
+    .status-badge.guest { background: #fed7d7; color: #742a2a; }
+    .btn-group { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.5rem; }
+    button {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    button:hover { opacity: 0.85; }
+    .btn-primary { background: #4f46e5; color: #fff; }
+    .btn-secondary { background: #e2e8f0; color: #2d3748; }
+    .btn-danger { background: #fc8181; color: #fff; }
+    .token-box {
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 0.75rem;
+      font-family: monospace;
+      font-size: 0.7rem;
+      color: #4a5568;
+      word-break: break-all;
+      margin-top: 1rem;
+      display: none;
+    }
+    #guest-view, #auth-view { display: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Users.au Demo</h1>
+    <p class="subtitle">Vanilla JS — @users-au/client</p>
+
+    <div id="loading">Initialising…</div>
+
+    <div id="guest-view">
+      <div class="status-badge guest">Not authenticated</div>
+      <div class="btn-group">
+        <button class="btn-primary" id="btn-login">Login with Users.au</button>
+        <button class="btn-secondary" id="btn-register">Register with Users.au</button>
+      </div>
+    </div>
+
+    <div id="auth-view">
+      <img id="user-avatar" class="avatar" src="" alt="Avatar" style="display:none">
+      <div id="user-name" class="user-name"></div>
+      <div id="user-email" class="user-email"></div>
+      <div class="status-badge authed">Authenticated ✓</div>
+      <div class="btn-group">
+        <button class="btn-secondary" id="btn-account">Manage Account</button>
+        <button class="btn-danger" id="btn-logout">Logout</button>
+      </div>
+      <div id="token-box" class="token-box"></div>
+    </div>
+  </div>
+
+  <!--
+    In a real project: import { UsersauClient } from '@users-au/client'
+    For this demo we import from the built dist file.
+  -->
+  <script type="module">
+    import { UsersauClient } from '../dist/index.js';
+
+    // ── Configure the client ──────────────────────────────────────────────────
+    const client = new UsersauClient({
+      clientId: 'YOUR_CLIENT_ID',           // Replace with your Users.au client ID
+      host: 'https://auth.users.au',         // Replace with your Users.au host
+      redirectUri: `${location.origin}/examples/vanilla.html`,
+      afterLoginUrl: '/examples/vanilla.html',
+      afterLogoutUrl: '/examples/vanilla.html',
+      afterRegisterUrl: '/examples/vanilla.html',
+    });
+
+    const $ = (id) => document.getElementById(id);
+
+    // ── Handle OAuth callback if we're on the callback page ──────────────────
+    const params = new URLSearchParams(location.search);
+    if (params.has('code')) {
+      try {
+        await client.handleCallback();
+      } catch (err) {
+        console.error('Callback error:', err);
+        history.replaceState({}, '', location.pathname);
+      }
+    }
+
+    // ── Render current state ─────────────────────────────────────────────────
+    function render() {
+      $('loading').style.display = 'none';
+
+      if (client.isAuthenticated) {
+        $('guest-view').style.display = 'none';
+        $('auth-view').style.display = 'block';
+
+        const user = client.user;
+        $('user-name').textContent = user.name;
+        $('user-email').textContent = user.email;
+        if (user.avatar) {
+          $('user-avatar').src = user.avatar;
+          $('user-avatar').style.display = 'block';
+        }
+        $('token-box').style.display = 'block';
+        $('token-box').textContent = `Access Token: ${client.accessToken?.slice(0, 40)}…`;
+      } else {
+        $('guest-view').style.display = 'block';
+        $('auth-view').style.display = 'none';
+      }
+    }
+
+    render();
+    client.subscribe(render);
+
+    // ── Button handlers ──────────────────────────────────────────────────────
+    $('btn-login')?.addEventListener('click', () => client.login());
+    $('btn-register')?.addEventListener('click', () => client.register());
+    $('btn-logout')?.addEventListener('click', () => client.logout());
+    $('btn-account')?.addEventListener('click', () => client.account());
+  </script>
+</body>
+</html>

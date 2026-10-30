@@ -485,3 +485,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 ## License
 
 MIT © [Users.au](https://users.au)
+
+## Account preferences and complete OIDC claims
+
+Client 2 implements the shared profile/preferences contract in Vanilla, React, Vue and browser-only Next.js adapters. See [the contract and migration guide](docs/identity-preferences.md) for versioned writes, refresh, conflict handling, issuer-isolated storage and server-only alternatives.

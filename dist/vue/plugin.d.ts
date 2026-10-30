@@ -1,6 +1,6 @@
 import { type Ref, type DeepReadonly, type App } from 'vue';
 import { UsersauClient } from '../core/UsersauClient';
-import type { UsersauConfig, UsersauUser } from '../core/types';
+import type { UsersauConfig, UsersauUser, InterfacePreferences, PreferenceChanges } from '../core/types';
 export interface UsersauPluginOptions extends UsersauConfig {
 }
 export declare const UsersauPlugin: {
@@ -34,6 +34,9 @@ export interface UseUsersauReturn {
     refreshToken: () => Promise<void>;
     /** Sync user info from Users.au */
     syncUser: () => Promise<UsersauUser>;
+    preferences: DeepReadonly<Ref<InterfacePreferences | null>>;
+    getPreferences: () => Promise<InterfacePreferences>;
+    updatePreferences: (changes: PreferenceChanges, expectedVersion?: number) => Promise<InterfacePreferences>;
     /** Raw client instance */
     client: UsersauClient;
 }

@@ -1,8 +1,10 @@
 import type { UsersauTokens, UsersauUser } from './types';
 type StorageType = 'localStorage' | 'sessionStorage' | 'memory';
 export declare class TokenStorage {
+    private namespace;
     private store;
-    constructor(type?: StorageType);
+    constructor(type?: StorageType, namespace?: string);
+    private key;
     setTokens(tokens: UsersauTokens): void;
     getTokens(): UsersauTokens | null;
     clearTokens(): void;

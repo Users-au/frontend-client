@@ -76,11 +76,11 @@ describe('UsersauClient', () => {
 
         it('rehydrates from storage when tokens exist', () => {
             localStorage.setItem(
-                'usersau_tokens',
+                'usersau:https%3A%2F%2Fauth.example.com:test_client_id:usersau_tokens',
                 JSON.stringify({ accessToken: 'stored_token', refreshToken: 'stored_refresh' })
             );
             localStorage.setItem(
-                'usersau_user',
+                'usersau:https%3A%2F%2Fauth.example.com:test_client_id:usersau_user',
                 JSON.stringify({ id: '1', name: 'Test', email: 'test@example.com' })
             );
 

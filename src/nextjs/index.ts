@@ -21,8 +21,12 @@ export { UsersauClient } from '../core/UsersauClient';
 export { UsersauProvider, useUsersau } from '../react/index';
 export type { UsersauProviderProps, UseUsersauReturn } from '../react/index';
 export type {
+    InterfacePreferences,
+    PreferenceChanges,
     UsersauConfig,
     UsersauUser,
     UsersauTokens,
     UsersauState,
 } from '../core/types';
+
+export { normalizeUserInfo, normalizePreferences, readIdentityJson, PreferencesError, PREFERENCES_CLAIM, IDENTITY_SCOPES } from '../core/identity';

@@ -1,6 +1,6 @@
-import { ref, readonly, type Ref, type DeepReadonly, inject, type App } from 'vue';
+import { ref, readonly, type Ref, type DeepReadonly, inject, type App, getCurrentScope, onScopeDispose } from 'vue';
 import { UsersauClient } from '../core/UsersauClient';
-import type { UsersauConfig, UsersauUser, UsersauState } from '../core/types';
+import type { UsersauConfig, UsersauUser, UsersauState, InterfacePreferences, PreferenceChanges } from '../core/types';
 
 // ── Injection key ────────────────────────────────────────────────────────────
 
@@ -44,6 +44,9 @@ export interface UseUsersauReturn {
     refreshToken: () => Promise<void>;
     /** Sync user info from Users.au */
     syncUser: () => Promise<UsersauUser>;
+    preferences: DeepReadonly<Ref<InterfacePreferences | null>>;
+    getPreferences: () => Promise<InterfacePreferences>;
+    updatePreferences: (changes: PreferenceChanges, expectedVersion?: number) => Promise<InterfacePreferences>;
     /** Raw client instance */
     client: UsersauClient;
 }
@@ -70,6 +73,7 @@ export function useUsersau(): UseUsersauReturn {
     }
 
     const state = client.state;
+    const preferences = ref<InterfacePreferences | null>(client.preferences);
 
     const user = ref<UsersauUser | null>(state.user);
     const isAuthenticated = ref<boolean>(state.isAuthenticated);
@@ -80,26 +84,20 @@ export function useUsersau(): UseUsersauReturn {
     // Keep refs in sync with client state changes
     const unsubscribe = client.subscribe((newState: UsersauState) => {
         user.value = newState.user;
+        preferences.value = client.preferences;
         isAuthenticated.value = newState.isAuthenticated;
         isLoading.value = newState.isLoading;
         error.value = newState.error;
         accessToken.value = newState.tokens?.accessToken ?? null;
     });
 
-    // Clean up subscription when component unmounts
-    // (getCurrentInstance check makes this safe if called outside setup)
-    if (typeof window !== 'undefined') {
-        // onUnmounted equivalent via Vue's lifecycle — import lazily to avoid
-        // issues when used outside components
-        import('vue').then(({ getCurrentInstance, onUnmounted }) => {
-            if (getCurrentInstance()) {
-                onUnmounted(unsubscribe);
-            }
-        });
-    }
+    if (getCurrentScope()) onScopeDispose(unsubscribe);
 
     return {
         user: readonly(user),
+        preferences: readonly(preferences),
+        getPreferences: () => client.getPreferences(),
+        updatePreferences: (changes, version) => client.updatePreferences(changes, version),
         isAuthenticated: readonly(isAuthenticated),
         isLoading: readonly(isLoading),
         error: readonly(error),

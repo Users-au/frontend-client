@@ -1,10 +1,12 @@
+import { IDENTITY_SCOPES, PREFERENCES_CLAIM, PreferencesError, normalizePreferences, normalizeUserInfo, readIdentityJson } from './identity';
 import type {
     UsersauConfig,
     UsersauUser,
     UsersauTokens,
     UsersauState,
     TokenResponse,
-    UserInfoResponse,
+    InterfacePreferences,
+    PreferenceChanges,
 } from './types';
 import { generateCodeVerifier, generateCodeChallenge, generateState } from './pkce';
 import { TokenStorage } from './storage';
@@ -27,21 +29,26 @@ export class UsersauClient {
 
     private storage: TokenStorage;
     private _state: UsersauState;
+    private generation = 0;
+    private preferenceWrites: Promise<unknown> = Promise.resolve();
+    private refreshing?: Promise<UsersauTokens>;
     private listeners: Array<(state: UsersauState) => void> = [];
 
     constructor(config: UsersauConfig) {
+        const host = new URL(config.host);
+        if (host.pathname !== '/' || host.username || host.password || host.search || host.hash || !['https:', 'http:'].includes(host.protocol) || (host.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(host.hostname))) throw new Error('Invalid Users.au host.');
         this.config = {
             clientId: config.clientId,
-            host: config.host.replace(/\/$/, ''), // strip trailing slash
+            host: host.origin,
             redirectUri: config.redirectUri,
             afterLoginUrl: config.afterLoginUrl ?? '/',
             afterLogoutUrl: config.afterLogoutUrl ?? '/',
             afterRegisterUrl: config.afterRegisterUrl ?? '/',
-            scopes: config.scopes ?? ['openid', 'profile', 'email'],
+            scopes: config.scopes ?? [...IDENTITY_SCOPES],
             storage: config.storage ?? 'localStorage',
         };
 
-        this.storage = new TokenStorage(this.config.storage);
+        this.storage = new TokenStorage(this.config.storage, `usersau:${encodeURIComponent(this.config.host)}:${encodeURIComponent(this.config.clientId)}`);
 
         // Rehydrate state from storage
         const tokens = this.storage.getTokens();
@@ -73,6 +80,8 @@ export class UsersauClient {
     get accessToken(): string | null {
         return this._state.tokens?.accessToken ?? null;
     }
+
+    get preferences(): InterfacePreferences | null { return this.user?.[PREFERENCES_CLAIM] ?? null; }
 
     // ── State subscriptions ──────────────────────────────────────────────────────
 
@@ -145,6 +154,8 @@ export class UsersauClient {
      * @returns The authenticated user
      */
     async handleCallback(params?: { code: string; state: string }): Promise<UsersauUser> {
+        const run = ++this.generation;
+        this.refreshing = undefined;
         this.setState({ isLoading: true, error: null });
 
         try {
@@ -166,7 +177,7 @@ export class UsersauClient {
 
             // Validate state to prevent CSRF
             const storedState = this.storage.getOauthState();
-            if (storedState && returnedState !== storedState) {
+            if (!storedState || returnedState !== storedState) {
                 throw new Error('OAuth state mismatch. Possible CSRF attack.');
             }
 
@@ -175,11 +186,16 @@ export class UsersauClient {
                 throw new Error('No PKCE verifier found. Did login() run in the same browser?');
             }
 
+            this.storage.clearPkceVerifier();
+            this.storage.clearOauthState();
+
             // Exchange code for tokens
             const tokens = await this.exchangeCodeForTokens(code, verifier);
 
             // Fetch user info
             const user = await this.fetchUserInfo(tokens.accessToken);
+
+            if (run !== this.generation) throw new PreferencesError(401);
 
             // Persist
             this.storage.setTokens(tokens);
@@ -204,7 +220,7 @@ export class UsersauClient {
             return user;
         } catch (err) {
             const error = err instanceof Error ? err : new Error(String(err));
-            this.setState({ isLoading: false, error });
+            if (run === this.generation) this.setState({ isLoading: false, error });
             throw error;
         }
     }
@@ -214,6 +230,8 @@ export class UsersauClient {
      * Mirrors PHP: AuthController::logout()
      */
     logout(): void {
+        this.generation++;
+        this.refreshing = undefined;
         this.storage.clearAll();
         this.setState({ user: null, tokens: null, isAuthenticated: false, error: null });
 
@@ -241,6 +259,15 @@ export class UsersauClient {
      * Call this when you receive a 401 response from your API.
      */
     async refreshToken(): Promise<UsersauTokens> {
+        if (this.refreshing) return this.refreshing;
+        const pending = this.performRefresh();
+        this.refreshing = pending;
+        try { return await pending; }
+        finally { if (this.refreshing === pending) this.refreshing = undefined; }
+    }
+
+    private async performRefresh(): Promise<UsersauTokens> {
+        const run = this.generation;
         const currentTokens = this.storage.getTokens();
         if (!currentTokens?.refreshToken) {
             throw new Error('No refresh token available. User must log in again.');
@@ -258,6 +285,7 @@ export class UsersauClient {
             body: body.toString(),
         });
 
+        if (run !== this.generation) throw new PreferencesError(401);
         if (!response.ok) {
             // Refresh token is invalid — clear session
             this.storage.clearAll();
@@ -265,8 +293,9 @@ export class UsersauClient {
             throw new Error(`Token refresh failed (${response.status}).`);
         }
 
-        const data: TokenResponse = await response.json();
+        const data = await readIdentityJson(response) as TokenResponse;
         const tokens = this.parseTokenResponse(data);
+        tokens.refreshToken ??= currentTokens.refreshToken;
 
         this.storage.setTokens(tokens);
         this.setState({ tokens });
@@ -278,13 +307,71 @@ export class UsersauClient {
      * Useful for refreshing profile data without re-authenticating.
      */
     async syncUser(): Promise<UsersauUser> {
+        const run = this.generation;
+        const subject = this.user?.sub;
         const token = this.accessToken;
         if (!token) throw new Error('Not authenticated.');
 
         const user = await this.fetchUserInfo(token);
+        if (run !== this.generation || user.sub !== subject) throw new PreferencesError(502);
         this.storage.setUser(user);
         this.setState({ user });
         return user;
+    }
+
+    /** Fetch the current account's confirmed global preferences. */
+    async getPreferences(): Promise<InterfacePreferences> {
+        return this.preferenceRequest('GET');
+    }
+
+    /** Serialize writes and use the latest confirmed version unless explicitly supplied. */
+    updatePreferences(changes: PreferenceChanges, expectedVersion?: number): Promise<InterfacePreferences> {
+        const run = this.generation;
+        const operation = this.preferenceWrites.then(async () => {
+            if (run !== this.generation) throw new PreferencesError(401);
+            const version = expectedVersion ?? (this.preferences ?? await this.getPreferences()).version;
+            return this.preferenceRequest('PATCH', changes, version);
+        });
+        this.preferenceWrites = operation.catch(() => {});
+        return operation;
+    }
+
+    private acceptPreferences(value: InterfacePreferences, run: number): InterfacePreferences {
+        if (run !== this.generation || this.user?.sub !== value.sub) throw new PreferencesError(401);
+        if (this.preferences && this.preferences.version > value.version) return this.preferences;
+        const user = { ...this.user, [PREFERENCES_CLAIM]: value };
+        if (value.locale) user.locale = value.locale;
+        else delete user.locale;
+        if (value.timezone) user.zoneinfo = value.timezone;
+        else delete user.zoneinfo;
+        this.storage.setUser(user);
+        this.setState({ user });
+        return value;
+    }
+
+    private async preferenceRequest(method: 'GET' | 'PATCH', changes?: PreferenceChanges, version?: number): Promise<InterfacePreferences> {
+        const run = this.generation;
+        const sub = this.user?.sub;
+        if (!sub || !this.accessToken || this._state.isLoading) throw new PreferencesError(401);
+        const fields = Object.fromEntries(Object.entries(changes ?? {}).filter(([key, value]) => ['locale', 'timezone', 'theme'].includes(key) && value !== undefined));
+        for (let attempt = 0; attempt < 2; attempt++) {
+            if (run !== this.generation) throw new PreferencesError(401);
+            const response = await fetch(`${this.config.host}/api/interface-preferences`, {
+                method, redirect: 'error', cache: 'no-store', credentials: 'omit', signal: AbortSignal.timeout(5000),
+                headers: { Accept: 'application/json', Authorization: `Bearer ${this.accessToken}`, ...(method === 'PATCH' ? { 'Content-Type': 'application/json' } : {}) },
+                ...(method === 'PATCH' ? { body: JSON.stringify({ ...fields, expected_version: version }) } : {}),
+            });
+            if (run !== this.generation) throw new PreferencesError(401);
+            if (response.status === 401 && attempt === 0 && this._state.tokens?.refreshToken) { await this.refreshToken(); continue; }
+            if (response.status === 409) {
+                const data = await readIdentityJson(response) as { preferences?: unknown };
+                const latest = this.acceptPreferences(normalizePreferences(data.preferences, sub), run);
+                throw new PreferencesError(409, latest);
+            }
+            if (!response.ok) throw new PreferencesError([401, 403, 422].includes(response.status) ? response.status : 503);
+            return this.acceptPreferences(normalizePreferences(await readIdentityJson(response), sub), run);
+        }
+        throw new PreferencesError(401);
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────────
@@ -305,35 +392,27 @@ export class UsersauClient {
         });
 
         if (!response.ok) {
-            const text = await response.text().catch(() => '');
-            throw new Error(`Token exchange failed (${response.status}): ${text}`);
+            throw new Error(`Token exchange failed (${response.status}).`);
         }
 
-        const data: TokenResponse = await response.json();
+        const data = await readIdentityJson(response) as TokenResponse;
         return this.parseTokenResponse(data);
     }
 
     private async fetchUserInfo(accessToken: string): Promise<UsersauUser> {
         const response = await fetch(`${this.config.host}/api/user`, {
-            headers: { Authorization: `Bearer ${accessToken}` },
+            headers: { Authorization: `Bearer ${accessToken}` }, redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(5000),
         });
 
         if (!response.ok) {
             throw new Error(`Failed to fetch user info (${response.status}).`);
         }
 
-        const data: UserInfoResponse = await response.json();
-
-        return {
-            id: data.id,
-            nickname: data.nickname,
-            name: data.name,
-            email: data.email,
-            avatar: data.avatar,
-        };
+        return normalizeUserInfo(await readIdentityJson(response));
     }
 
     private parseTokenResponse(data: TokenResponse): UsersauTokens {
+        if (typeof data.access_token !== 'string' || !data.access_token) throw new PreferencesError(502);
         return {
             accessToken: data.access_token,
             refreshToken: data.refresh_token,

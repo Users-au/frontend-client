@@ -7,7 +7,7 @@ import React, {
     type ReactNode,
 } from 'react';
 import { UsersauClient } from '../core/UsersauClient';
-import type { UsersauConfig, UsersauUser, UsersauState, UsersauTokens } from '../core/types';
+import type { UsersauConfig, UsersauUser, UsersauState, UsersauTokens, InterfacePreferences, PreferenceChanges } from '../core/types';
 
 // ── Context ──────────────────────────────────────────────────────────────────
 
@@ -93,6 +93,9 @@ export interface UseUsersauReturn {
     refreshToken: () => Promise<void>;
     /** Sync user info from Users.au */
     syncUser: () => Promise<UsersauUser>;
+    preferences: InterfacePreferences | null;
+    getPreferences: () => Promise<InterfacePreferences>;
+    updatePreferences: (changes: PreferenceChanges, expectedVersion?: number) => Promise<InterfacePreferences>;
     /** Raw client instance */
     client: UsersauClient;
 }
@@ -117,6 +120,9 @@ export function useUsersau(): UseUsersauReturn {
 
     return {
         user: state.user,
+        preferences: client.preferences,
+        getPreferences: () => client.getPreferences(),
+        updatePreferences: (changes, version) => client.updatePreferences(changes, version),
         isAuthenticated: state.isAuthenticated,
         isLoading: state.isLoading,
         error: state.error,

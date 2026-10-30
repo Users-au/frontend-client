@@ -17,7 +17,7 @@ type StorageType = 'localStorage' | 'sessionStorage' | 'memory';
 export class TokenStorage {
     private store: Storage | Record<string, string>;
 
-    constructor(type: StorageType = 'localStorage') {
+    constructor(type: StorageType = 'localStorage', private namespace = '') {
         if (type === 'memory') {
             this.store = {};
         } else {
@@ -34,14 +34,16 @@ export class TokenStorage {
         }
     }
 
+    private key(key: string): string { return this.namespace ? `${this.namespace}:${key}` : key; }
+
     // ── Tokens ──────────────────────────────────────────────────────────────────
 
     setTokens(tokens: UsersauTokens): void {
-        this.store[KEYS.tokens] = JSON.stringify(tokens);
+        this.store[this.key(KEYS.tokens)] = JSON.stringify(tokens);
     }
 
     getTokens(): UsersauTokens | null {
-        const raw = this.store[KEYS.tokens];
+        const raw = this.store[this.key(KEYS.tokens)];
         if (!raw) return null;
         try {
             return JSON.parse(raw) as UsersauTokens;
@@ -51,17 +53,17 @@ export class TokenStorage {
     }
 
     clearTokens(): void {
-        delete this.store[KEYS.tokens];
+        delete this.store[this.key(KEYS.tokens)];
     }
 
     // ── User ────────────────────────────────────────────────────────────────────
 
     setUser(user: UsersauUser): void {
-        this.store[KEYS.user] = JSON.stringify(user);
+        this.store[this.key(KEYS.user)] = JSON.stringify(user);
     }
 
     getUser(): UsersauUser | null {
-        const raw = this.store[KEYS.user];
+        const raw = this.store[this.key(KEYS.user)];
         if (!raw) return null;
         try {
             return JSON.parse(raw) as UsersauUser;
@@ -71,45 +73,45 @@ export class TokenStorage {
     }
 
     clearUser(): void {
-        delete this.store[KEYS.user];
+        delete this.store[this.key(KEYS.user)];
     }
 
     // ── PKCE / OAuth helpers ─────────────────────────────────────────────────────
 
     setPkceVerifier(verifier: string): void {
-        this.store[KEYS.pkceVerifier] = verifier;
+        this.store[this.key(KEYS.pkceVerifier)] = verifier;
     }
 
     getPkceVerifier(): string | null {
-        return this.store[KEYS.pkceVerifier] ?? null;
+        return this.store[this.key(KEYS.pkceVerifier)] ?? null;
     }
 
     clearPkceVerifier(): void {
-        delete this.store[KEYS.pkceVerifier];
+        delete this.store[this.key(KEYS.pkceVerifier)];
     }
 
     setOauthState(state: string): void {
-        this.store[KEYS.oauthState] = state;
+        this.store[this.key(KEYS.oauthState)] = state;
     }
 
     getOauthState(): string | null {
-        return this.store[KEYS.oauthState] ?? null;
+        return this.store[this.key(KEYS.oauthState)] ?? null;
     }
 
     clearOauthState(): void {
-        delete this.store[KEYS.oauthState];
+        delete this.store[this.key(KEYS.oauthState)];
     }
 
     setFlow(flow: 'login' | 'register'): void {
-        this.store[KEYS.flow] = flow;
+        this.store[this.key(KEYS.flow)] = flow;
     }
 
     getFlow(): 'login' | 'register' {
-        return (this.store[KEYS.flow] as 'login' | 'register') ?? 'login';
+        return (this.store[this.key(KEYS.flow)] as 'login' | 'register') ?? 'login';
     }
 
     clearFlow(): void {
-        delete this.store[KEYS.flow];
+        delete this.store[this.key(KEYS.flow)];
     }
 
     // ── Clear all ────────────────────────────────────────────────────────────────

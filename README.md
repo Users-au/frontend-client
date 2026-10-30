@@ -112,7 +112,7 @@ npm install react react-dom
 | `afterLoginUrl` | `string` | `'/'` | Redirect URL after successful login |
 | `afterLogoutUrl` | `string` | `'/'` | Redirect URL after logout |
 | `afterRegisterUrl` | `string` | `'/'` | Redirect URL after registration |
-| `scopes` | `string[]` | `['openid', 'profile', 'email']` | OAuth scopes to request |
+| `scopes` | `string[]` | `['openid', 'profile', 'email', 'preferences:read', 'preferences:write']` | OAuth scopes to request |
 | `storage` | `'localStorage' \| 'sessionStorage' \| 'memory'` | `'localStorage'` | Token storage strategy |
 
 ---
@@ -485,3 +485,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 ## License
 
 MIT © [Users.au](https://users.au)
+
+## Account preferences and complete OIDC claims
+
+Client 2 implements the shared profile/preferences contract in Vanilla, React, Vue and browser-only Next.js adapters. See [the contract and migration guide](docs/identity-preferences.md) for versioned writes, refresh, conflict handling, issuer-isolated storage and server-only alternatives.

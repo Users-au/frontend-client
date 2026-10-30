@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react';
 import { UsersauClient } from '../core/UsersauClient';
-import type { UsersauConfig, UsersauUser, UsersauTokens } from '../core/types';
+import type { UsersauConfig, UsersauUser, UsersauTokens, InterfacePreferences, PreferenceChanges } from '../core/types';
 export interface UsersauProviderProps {
     config: UsersauConfig;
     children: ReactNode;
@@ -51,6 +51,9 @@ export interface UseUsersauReturn {
     refreshToken: () => Promise<void>;
     /** Sync user info from Users.au */
     syncUser: () => Promise<UsersauUser>;
+    preferences: InterfacePreferences | null;
+    getPreferences: () => Promise<InterfacePreferences>;
+    updatePreferences: (changes: PreferenceChanges, expectedVersion?: number) => Promise<InterfacePreferences>;
     /** Raw client instance */
     client: UsersauClient;
 }

@@ -1,31 +1,34 @@
 import { jsx as a } from "react/jsx-runtime";
-import { createContext as i, useRef as l, useState as f, useEffect as d, useContext as U } from "react";
-import { UsersauClient as b } from "./index.js";
-const n = i(null);
+import { createContext as i, useRef as f, useState as l, useEffect as d, useContext as p } from "react";
+import { UsersauClient as g } from "./index.js";
+const o = i(null);
 function C({ config: s, children: e }) {
-  const t = l(null);
-  t.current || (t.current = new b(s));
-  const r = t.current, [o, u] = f(r.state);
-  return d(() => r.subscribe((c) => {
+  const r = f(null);
+  r.current || (r.current = new g(s));
+  const t = r.current, [n, u] = l(t.state);
+  return d(() => t.subscribe((c) => {
     u(c);
-  }), [r]), /* @__PURE__ */ a(n.Provider, { value: { client: r, state: o }, children: e });
+  }), [t]), /* @__PURE__ */ a(o.Provider, { value: { client: t, state: n }, children: e });
 }
-function k() {
-  const s = U(n);
+function P() {
+  const s = p(o);
   if (!s)
     throw new Error(
       "[useUsersau] No UsersauContext found. Wrap your app with <UsersauProvider>."
     );
-  const { client: e, state: t } = s;
+  const { client: e, state: r } = s;
   return {
-    user: t.user,
-    isAuthenticated: t.isAuthenticated,
-    isLoading: t.isLoading,
-    error: t.error,
-    tokens: t.tokens,
+    user: r.user,
+    preferences: e.preferences,
+    getPreferences: () => e.getPreferences(),
+    updatePreferences: (t, n) => e.updatePreferences(t, n),
+    isAuthenticated: r.isAuthenticated,
+    isLoading: r.isLoading,
+    error: r.error,
+    tokens: r.tokens,
     login: () => e.login(),
     register: () => e.register(),
-    handleCallback: (r) => e.handleCallback(r),
+    handleCallback: (t) => e.handleCallback(t),
     logout: () => e.logout(),
     account: () => e.account(),
     refreshToken: async () => {
@@ -37,6 +40,6 @@ function k() {
 }
 export {
   C as UsersauProvider,
-  k as useUsersau
+  P as useUsersau
 };
 //# sourceMappingURL=react.js.map

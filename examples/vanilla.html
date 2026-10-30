@@ -133,8 +133,8 @@
         $('auth-view').style.display = 'block';
 
         const user = client.user;
-        $('user-name').textContent = user.name;
-        $('user-email').textContent = user.email;
+        $('user-name').textContent = user.name || user.sub;
+        $('user-email').textContent = user.email || 'Email unavailable';
         if (user.avatar) {
           $('user-avatar').src = user.avatar;
           $('user-avatar').style.display = 'block';

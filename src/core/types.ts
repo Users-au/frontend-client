@@ -13,18 +13,47 @@ export interface UsersauConfig {
     afterLogoutUrl?: string;
     /** URL to redirect to after registration (default: '/') */
     afterRegisterUrl?: string;
-    /** OAuth scopes to request (default: ['openid', 'profile', 'email']) */
+    /** OAuth scopes to request (default: identity plus preference read/write) */
     scopes?: string[];
     /** Token storage strategy (default: 'localStorage') */
     storage?: 'localStorage' | 'sessionStorage' | 'memory';
 }
 
+export interface InterfacePreferences {
+    sub: string;
+    locale?: string | null;
+    timezone?: string | null;
+    theme: 'system' | 'light' | 'dark';
+    version: number;
+}
+
+export type PreferenceChanges = { locale?: string; timezone?: string; theme?: InterfacePreferences['theme'] };
+
 export interface UsersauUser {
+    /** Alias for sub for application display/routing. Identity is issuer + sub. */
     id: string;
+    sub: string;
+    name?: string;
+    given_name?: string;
+    family_name?: string;
+    middle_name?: string;
     nickname?: string;
-    name: string;
-    email: string;
+    preferred_username?: string;
+    profile?: string;
+    picture?: string;
     avatar?: string;
+    website?: string;
+    gender?: string;
+    birthdate?: string;
+    zoneinfo?: string;
+    locale?: string;
+    updated_at?: number;
+    email?: string;
+    email_verified?: boolean;
+    phone_number?: string;
+    phone_number_verified?: boolean;
+    address?: Partial<Record<'formatted' | 'street_address' | 'locality' | 'region' | 'postal_code' | 'country', string>>;
+    'urn:usersau:preferences'?: InterfacePreferences;
 }
 
 export interface UsersauTokens {
@@ -51,10 +80,4 @@ export interface TokenResponse {
     scope?: string;
 }
 
-export interface UserInfoResponse {
-    id: string;
-    nickname?: string;
-    name: string;
-    email: string;
-    avatar?: string;
-}
+export type UserInfoResponse = Partial<UsersauUser>;

@@ -1,4 +1,4 @@
-import type { UsersauConfig, UsersauUser, UsersauTokens, UsersauState } from './types';
+import type { UsersauConfig, UsersauUser, UsersauTokens, UsersauState, InterfacePreferences, PreferenceChanges } from './types';
 /**
  * UsersauClient — the core OAuth 2.0 PKCE client.
  *
@@ -13,12 +13,16 @@ export declare class UsersauClient {
     private config;
     private storage;
     private _state;
+    private generation;
+    private preferenceWrites;
+    private refreshing?;
     private listeners;
     constructor(config: UsersauConfig);
     get state(): UsersauState;
     get user(): UsersauUser | null;
     get isAuthenticated(): boolean;
     get accessToken(): string | null;
+    get preferences(): InterfacePreferences | null;
     /** Subscribe to state changes. Returns an unsubscribe function. */
     subscribe(listener: (state: UsersauState) => void): () => void;
     private setState;
@@ -64,11 +68,18 @@ export declare class UsersauClient {
      * Call this when you receive a 401 response from your API.
      */
     refreshToken(): Promise<UsersauTokens>;
+    private performRefresh;
     /**
      * Fetch the current user's info from Users.au.
      * Useful for refreshing profile data without re-authenticating.
      */
     syncUser(): Promise<UsersauUser>;
+    /** Fetch the current account's confirmed global preferences. */
+    getPreferences(): Promise<InterfacePreferences>;
+    /** Serialize writes and use the latest confirmed version unless explicitly supplied. */
+    updatePreferences(changes: PreferenceChanges, expectedVersion?: number): Promise<InterfacePreferences>;
+    private acceptPreferences;
+    private preferenceRequest;
     private exchangeCodeForTokens;
     private fetchUserInfo;
     private parseTokenResponse;

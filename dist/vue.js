@@ -1,30 +1,31 @@
-import { inject as h, ref as o, readonly as r } from "vue";
-import { UsersauClient as k } from "./index.js";
-const f = Symbol("usersau"), b = {
-  install(e, n) {
-    const i = new k(n);
-    e.provide(f, i);
+import { inject as k, ref as n, getCurrentScope as U, onScopeDispose as h, readonly as o } from "vue";
+import { UsersauClient as v } from "./index.js";
+const g = Symbol("usersau"), P = {
+  install(e, r) {
+    const c = new v(r);
+    e.provide(g, c);
   }
 };
-function v() {
+function T() {
   var d;
-  const e = h(f);
+  const e = k(g);
   if (!e)
     throw new Error(
       "[useUsersau] No UsersauClient found. Did you install UsersauPlugin via app.use()?"
     );
-  const n = e.state, i = o(n.user), u = o(n.isAuthenticated), a = o(n.isLoading), c = o(n.error), l = o(((d = n.tokens) == null ? void 0 : d.accessToken) ?? null), g = e.subscribe((s) => {
+  const r = e.state, c = n(e.preferences), u = n(r.user), a = n(r.isAuthenticated), i = n(r.isLoading), l = n(r.error), f = n(((d = r.tokens) == null ? void 0 : d.accessToken) ?? null), p = e.subscribe((s) => {
     var t;
-    i.value = s.user, u.value = s.isAuthenticated, a.value = s.isLoading, c.value = s.error, l.value = ((t = s.tokens) == null ? void 0 : t.accessToken) ?? null;
+    u.value = s.user, c.value = e.preferences, a.value = s.isAuthenticated, i.value = s.isLoading, l.value = s.error, f.value = ((t = s.tokens) == null ? void 0 : t.accessToken) ?? null;
   });
-  return typeof window < "u" && import("vue").then(({ getCurrentInstance: s, onUnmounted: t }) => {
-    s() && t(g);
-  }), {
-    user: r(i),
-    isAuthenticated: r(u),
-    isLoading: r(a),
-    error: r(c),
-    accessToken: r(l),
+  return U() && h(p), {
+    user: o(u),
+    preferences: o(c),
+    getPreferences: () => e.getPreferences(),
+    updatePreferences: (s, t) => e.updatePreferences(s, t),
+    isAuthenticated: o(a),
+    isLoading: o(i),
+    error: o(l),
+    accessToken: o(f),
     login: () => e.login(),
     register: () => e.register(),
     handleCallback: (s) => e.handleCallback(s),
@@ -38,7 +39,7 @@ function v() {
   };
 }
 export {
-  b as UsersauPlugin,
-  v as useUsersau
+  P as UsersauPlugin,
+  T as useUsersau
 };
 //# sourceMappingURL=vue.js.map

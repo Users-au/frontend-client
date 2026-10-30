@@ -11,7 +11,7 @@
     </div>
 
     <div v-else-if="isAuthenticated" class="card">
-      <img v-if="user?.avatar" :src="user.avatar" :alt="user.name" class="avatar" />
+      <img v-if="user?.avatar" :src="user.avatar" :alt="user.name || ''" class="avatar" />
       <h2>{{ user?.name }}</h2>
       <p class="email">{{ user?.email }}</p>
       <div class="badge authed">Authenticated ✓</div>

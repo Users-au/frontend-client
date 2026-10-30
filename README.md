@@ -112,7 +112,7 @@ npm install react react-dom
 | `afterLoginUrl` | `string` | `'/'` | Redirect URL after successful login |
 | `afterLogoutUrl` | `string` | `'/'` | Redirect URL after logout |
 | `afterRegisterUrl` | `string` | `'/'` | Redirect URL after registration |
-| `scopes` | `string[]` | `['openid', 'profile', 'email']` | OAuth scopes to request |
+| `scopes` | `string[]` | `['openid', 'profile', 'email', 'preferences:read', 'preferences:write']` | OAuth scopes to request |
 | `storage` | `'localStorage' \| 'sessionStorage' \| 'memory'` | `'localStorage'` | Token storage strategy |
 
 ---

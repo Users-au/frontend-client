@@ -489,3 +489,13 @@ MIT © [Users.au](https://users.au)
 ## Account preferences and complete OIDC claims
 
 Client 2 implements the shared profile/preferences contract in Vanilla, React, Vue and browser-only Next.js adapters. See [the contract and migration guide](docs/identity-preferences.md) for versioned writes, refresh, conflict handling, issuer-isolated storage and server-only alternatives.
+
+## Confidential PAR and branded account management
+
+Use the server-only `@users-au/client/server` export from a trusted backend. It exposes `createPushedAuthorizationUrl(config, parameters, context)` and `createApplicationContextUrl(config, 'account' | 'logout', context)`. `config` contains `host`, `clientId`, `clientSecret`; never expose it through a browser bundle or `NEXT_PUBLIC_*` variables. Browser execution is rejected before any request.
+
+`context` contains `context_id`, `branding: {name, logo_url?, logo_dark_url?, favicon_url?, theme_color?}` and `links: {home_url, logout_url?, support_url?}`. Derive it from verified application configuration/data. Each account/logout action creates a fresh single-use context. Home controls Logo/Profile return links; logout_url controls sign-out return; the OAuth redirect_uri is only for authorization-code exchange. Context does not authenticate a user or grant access.
+
+A browser app with a confidential backend can set `serverRoutes: {login, register, account, logout}` on `UsersauConfig`. These must all be same-origin application routes. The browser navigates to those routes, and the server creates the PAR/context requests. The logout entry must provide a CSRF-protected sign-out flow. Pure browser/public clients keep registered callback URLs and PKCE; they cannot submit trusted branding with a secret.
+
+The Next.js starter kit shows NextAuth integration: push its generated state/S256 request on the server while preserving its check cookies and original callback. Upgrade Auth's tenant migrations before using `/oauth/context`.

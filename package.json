@@ -1,6 +1,6 @@
 {
   "name": "@users-au/client",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Users.au OAuth 2.0 frontend client library for Vanilla JS, Vue 3, React, and Next.js",
   "homepage": "https://github.com/Users-au/frontend-client",
   "license": "MIT",
@@ -28,6 +28,11 @@
       "import": "./dist/nextjs.js",
       "require": "./dist/nextjs.cjs",
       "types": "./dist/nextjs.d.ts"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js",
+      "require": "./dist/server.cjs"
     }
   },
   "files": [

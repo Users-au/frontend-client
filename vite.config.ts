@@ -18,6 +18,7 @@ export default defineConfig({
                 vue: resolve(__dirname, 'src/vue/index.ts'),
                 react: resolve(__dirname, 'src/react/index.tsx'),
                 nextjs: resolve(__dirname, 'src/nextjs/index.ts'),
+                server: resolve(__dirname, 'src/server/index.ts'),
             },
             formats: ['es', 'cjs'],
             fileName: (format, entryName) =>

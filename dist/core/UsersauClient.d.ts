@@ -68,6 +68,7 @@ export declare class UsersauClient {
      * Call this when you receive a 401 response from your API.
      */
     refreshToken(): Promise<UsersauTokens>;
+    private navigateServer;
     private performRefresh;
     /**
      * Fetch the current user's info from Users.au.

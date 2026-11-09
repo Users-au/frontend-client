@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 
 // Mock window.location for tests
-Object.defineProperty(window, 'location', {
+if (typeof window !== 'undefined') Object.defineProperty(window, 'location', {
     writable: true,
     value: {
         href: 'http://localhost/',

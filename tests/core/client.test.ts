@@ -336,3 +336,17 @@ describe('UsersauClient', () => {
         });
     });
 });
+
+
+describe('confidential backend entries', () => {
+    it('uses same-origin backend entries for every action, including account without local browser tokens', async () => {
+        const client = new UsersauClient({ ...baseConfig, serverRoutes: { login: '/auth/login', register: '/auth/register', account: '/auth/account', logout: '/auth/logout' } });
+        const assign = vi.mocked(window.location.assign); assign.mockClear();
+        await client.login(); client.register(); client.account(); client.logout();
+        expect(assign.mock.calls.map(call => call[0])).toEqual(['http://localhost/auth/login', 'http://localhost/auth/register', 'http://localhost/auth/account', 'http://localhost/auth/logout']);
+    });
+    it('rejects a backend entry on another origin', () => {
+        const client = new UsersauClient({ ...baseConfig, serverRoutes: { login: '/login', register: '/register', account: 'https://attacker.example/account', logout: '/logout' } });
+        expect(() => client.account()).toThrow('application origin');
+    });
+});

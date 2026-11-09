@@ -25,7 +25,7 @@ export class UsersauClient {
     private config: Required<
         Pick<UsersauConfig, 'afterLoginUrl' | 'afterLogoutUrl' | 'afterRegisterUrl' | 'scopes' | 'storage'>
     > &
-        Pick<UsersauConfig, 'clientId' | 'host' | 'redirectUri'>;
+        Pick<UsersauConfig, 'clientId' | 'host' | 'redirectUri' | 'serverRoutes'>;
 
     private storage: TokenStorage;
     private _state: UsersauState;
@@ -38,6 +38,7 @@ export class UsersauClient {
         const host = new URL(config.host);
         if (host.pathname !== '/' || host.username || host.password || host.search || host.hash || !['https:', 'http:'].includes(host.protocol) || (host.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(host.hostname))) throw new Error('Invalid Users.au host.');
         this.config = {
+            serverRoutes: config.serverRoutes,
             clientId: config.clientId,
             host: host.origin,
             redirectUri: config.redirectUri,
@@ -108,6 +109,7 @@ export class UsersauClient {
      * browser to `{host}/oauth/authorize`.
      */
     async login(): Promise<void> {
+        if (this.navigateServer('login')) return;
         const verifier = generateCodeVerifier();
         const challenge = await generateCodeChallenge(verifier);
         const oauthState = generateState();
@@ -134,6 +136,7 @@ export class UsersauClient {
      * Mirrors PHP: AuthController::register()
      */
     register(): void {
+        if (this.navigateServer('register')) return;
         this.storage.setFlow('register');
 
         const params = new URLSearchParams({
@@ -230,6 +233,7 @@ export class UsersauClient {
      * Mirrors PHP: AuthController::logout()
      */
     logout(): void {
+        if (this.navigateServer('logout')) return;
         this.generation++;
         this.refreshing = undefined;
         this.storage.clearAll();
@@ -247,6 +251,7 @@ export class UsersauClient {
      * Mirrors PHP: AuthController::account()
      */
     account(): void {
+        if (this.navigateServer('account')) return;
         if (!this._state.isAuthenticated) {
             this.login();
             return;
@@ -264,6 +269,15 @@ export class UsersauClient {
         this.refreshing = pending;
         try { return await pending; }
         finally { if (this.refreshing === pending) this.refreshing = undefined; }
+    }
+
+    private navigateServer(action: 'login' | 'register' | 'account' | 'logout'): boolean {
+        const value = this.config.serverRoutes?.[action];
+        if (!value) return false;
+        const url = new URL(value, window.location.origin);
+        if (url.origin !== window.location.origin || url.username || url.password) throw new Error('Users.au backend routes must use the application origin.');
+        window.location.assign(url.toString());
+        return true;
     }
 
     private async performRefresh(): Promise<UsersauTokens> {

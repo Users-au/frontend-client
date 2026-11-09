@@ -1,15 +1,15 @@
-var _ = Object.defineProperty;
-var S = (o, e, t) => e in o ? _(o, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : o[e] = t;
-var l = (o, e, t) => S(o, typeof e != "symbol" ? e + "" : e, t);
+var S = Object.defineProperty;
+var _ = (i, e, t) => e in i ? S(i, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : i[e] = t;
+var l = (i, e, t) => _(i, typeof e != "symbol" ? e + "" : e, t);
 const w = "urn:usersau:preferences", U = ["openid", "profile", "email", "preferences:read", "preferences:write"];
 class a extends Error {
   constructor(e, t) {
     super(e === 409 ? "preferences_conflict" : [401, 403].includes(e) ? "preferences_reauthorization_required" : "preferences_unavailable"), this.status = e, this.preferences = t, this.name = "PreferencesError";
   }
 }
-function y(o, e) {
-  if (!o || typeof o != "object") throw new a(502);
-  const t = o;
+function y(i, e) {
+  if (!i || typeof i != "object") throw new a(502);
+  const t = i;
   if (t.sub !== e || !Number.isSafeInteger(t.version) || t.version < 0 || !["system", "light", "dark"].includes(t.theme)) throw new a(502);
   if (t.locale != null && (typeof t.locale != "string" || t.locale.length > 35 || !/^[a-zA-Z]{2,8}(?:-[a-zA-Z0-9]{1,8})*$/.test(t.locale))) throw new a(502);
   if (t.timezone != null) {
@@ -28,18 +28,18 @@ function y(o, e) {
     version: t.version
   };
 }
-function b(o) {
-  if (!o || typeof o != "object") throw new a(502);
-  const e = o, t = e.sub ?? (typeof e.id == "number" ? String(e.id) : e.id);
+function b(i) {
+  if (!i || typeof i != "object") throw new a(502);
+  const e = i, t = e.sub ?? (typeof e.id == "number" ? String(e.id) : e.id);
   if (typeof t != "string" || t.length > 255 || !t || t.trim() !== t || /[\s\x00-\x1f\x7f]/.test(t) || e.sub != null && e.id != null && String(e.id) !== t) throw new a(502);
   const r = { id: t, sub: t }, s = r;
   for (const n of ["name", "given_name", "family_name", "middle_name", "nickname", "preferred_username", "gender", "birthdate", "zoneinfo", "locale", "email", "phone_number"])
     typeof e[n] == "string" && e[n] !== "" && (s[n] = e[n]);
   for (const n of ["profile", "picture", "website"]) {
-    const i = n === "picture" ? e.picture ?? e.avatar ?? e.image : e[n];
-    if (typeof i == "string")
+    const o = n === "picture" ? e.picture ?? e.avatar ?? e.image : e[n];
+    if (typeof o == "string")
       try {
-        ["http:", "https:"].includes(new URL(i).protocol) && (s[n] = i);
+        ["http:", "https:"].includes(new URL(o).protocol) && (s[n] = o);
       } catch {
       }
   }
@@ -47,31 +47,31 @@ function b(o) {
   for (const n of ["email_verified", "phone_number_verified"]) typeof e[n] == "boolean" && (s[n] = e[n]);
   if (Number.isSafeInteger(e.updated_at) && (r.updated_at = e.updated_at), e.address && typeof e.address == "object") {
     const n = e.address;
-    r.address = Object.fromEntries(["formatted", "street_address", "locality", "region", "postal_code", "country"].filter((i) => typeof n[i] == "string").map((i) => [i, n[i]]));
+    r.address = Object.fromEntries(["formatted", "street_address", "locality", "region", "postal_code", "country"].filter((o) => typeof n[o] == "string").map((o) => [o, n[o]]));
   }
   return e[w] != null && (r[w] = y(e[w], t)), r;
 }
-async function d(o) {
+async function d(i) {
   try {
-    return await o.json();
+    return await i.json();
   } catch {
     throw new a(502);
   }
 }
 function T() {
-  const o = new Uint8Array(32);
-  return crypto.getRandomValues(o), m(o);
+  const i = new Uint8Array(32);
+  return crypto.getRandomValues(i), m(i);
 }
-async function P(o) {
-  const t = new TextEncoder().encode(o), r = await crypto.subtle.digest("SHA-256", t);
+async function P(i) {
+  const t = new TextEncoder().encode(i), r = await crypto.subtle.digest("SHA-256", t);
   return m(new Uint8Array(r));
 }
-function E() {
-  const o = new Uint8Array(16);
-  return crypto.getRandomValues(o), m(o);
+function v() {
+  const i = new Uint8Array(16);
+  return crypto.getRandomValues(i), m(i);
 }
-function m(o) {
-  return btoa(String.fromCharCode(...o)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+function m(i) {
+  return btoa(String.fromCharCode(...i)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
 const c = {
   tokens: "usersau_tokens",
@@ -80,7 +80,7 @@ const c = {
   oauthState: "usersau_oauth_state",
   flow: "usersau_flow"
 };
-class A {
+class R {
   constructor(e = "localStorage", t = "") {
     l(this, "store");
     if (this.namespace = t, e === "memory")
@@ -160,7 +160,7 @@ class A {
     this.clearTokens(), this.clearUser(), this.clearPkceVerifier(), this.clearOauthState(), this.clearFlow();
   }
 }
-class $ {
+class A {
   constructor(e) {
     l(this, "config");
     l(this, "storage");
@@ -172,6 +172,7 @@ class $ {
     const t = new URL(e.host);
     if (t.pathname !== "/" || t.username || t.password || t.search || t.hash || !["https:", "http:"].includes(t.protocol) || t.protocol === "http:" && !["localhost", "127.0.0.1", "[::1]"].includes(t.hostname)) throw new Error("Invalid Users.au host.");
     this.config = {
+      serverRoutes: e.serverRoutes,
       clientId: e.clientId,
       host: t.origin,
       redirectUri: e.redirectUri,
@@ -180,7 +181,7 @@ class $ {
       afterRegisterUrl: e.afterRegisterUrl ?? "/",
       scopes: e.scopes ?? [...U],
       storage: e.storage ?? "localStorage"
-    }, this.storage = new A(this.config.storage, `usersau:${encodeURIComponent(this.config.host)}:${encodeURIComponent(this.config.clientId)}`);
+    }, this.storage = new R(this.config.storage, `usersau:${encodeURIComponent(this.config.host)}:${encodeURIComponent(this.config.clientId)}`);
     const r = this.storage.getTokens(), s = this.storage.getUser();
     this._state = {
       user: s,
@@ -227,7 +228,8 @@ class $ {
    * browser to `{host}/oauth/authorize`.
    */
   async login() {
-    const e = T(), t = await P(e), r = E();
+    if (this.navigateServer("login")) return;
+    const e = T(), t = await P(e), r = v();
     this.storage.setPkceVerifier(e), this.storage.setOauthState(r), this.storage.setFlow("login");
     const s = new URLSearchParams({
       client_id: this.config.clientId,
@@ -245,6 +247,7 @@ class $ {
    * Mirrors PHP: AuthController::register()
    */
   register() {
+    if (this.navigateServer("register")) return;
     this.storage.setFlow("register");
     const e = new URLSearchParams({
       redirect_uri: this.config.redirectUri
@@ -265,9 +268,9 @@ class $ {
     const t = ++this.generation;
     this.refreshing = void 0, this.setState({ isLoading: !0, error: null });
     try {
-      const r = e ? new URLSearchParams(e) : new URLSearchParams(window.location.search), s = r.get("code"), n = r.get("state"), i = r.get("error");
-      if (i)
-        throw new Error(`OAuth error: ${i} — ${r.get("error_description") ?? ""}`);
+      const r = e ? new URLSearchParams(e) : new URLSearchParams(window.location.search), s = r.get("code"), n = r.get("state"), o = r.get("error");
+      if (o)
+        throw new Error(`OAuth error: ${o} — ${r.get("error_description") ?? ""}`);
       if (!s)
         throw new Error("No authorization code found in callback URL.");
       const u = this.storage.getOauthState();
@@ -294,6 +297,7 @@ class $ {
    * Mirrors PHP: AuthController::logout()
    */
   logout() {
+    if (this.navigateServer("logout")) return;
     this.generation++, this.refreshing = void 0, this.storage.clearAll(), this.setState({ user: null, tokens: null, isAuthenticated: !1, error: null });
     const e = new URLSearchParams({
       continue: this.resolveUrl(this.config.afterLogoutUrl)
@@ -305,11 +309,13 @@ class $ {
    * Mirrors PHP: AuthController::account()
    */
   account() {
-    if (!this._state.isAuthenticated) {
-      this.login();
-      return;
+    if (!this.navigateServer("account")) {
+      if (!this._state.isAuthenticated) {
+        this.login();
+        return;
+      }
+      window.location.href = `${this.config.host}/account`;
     }
-    window.location.href = `${this.config.host}/account`;
   }
   /**
    * Refresh the access token using the stored refresh token.
@@ -324,6 +330,14 @@ class $ {
     } finally {
       this.refreshing === e && (this.refreshing = void 0);
     }
+  }
+  navigateServer(e) {
+    var s;
+    const t = (s = this.config.serverRoutes) == null ? void 0 : s[e];
+    if (!t) return !1;
+    const r = new URL(t, window.location.origin);
+    if (r.origin !== window.location.origin || r.username || r.password) throw new Error("Users.au backend routes must use the application origin.");
+    return window.location.assign(r.toString()), !0;
   }
   async performRefresh() {
     const e = this.generation, t = this.storage.getTokens();
@@ -341,8 +355,8 @@ class $ {
     if (e !== this.generation) throw new a(401);
     if (!s.ok)
       throw this.storage.clearAll(), this.setState({ user: null, tokens: null, isAuthenticated: !1 }), new Error(`Token refresh failed (${s.status}).`);
-    const n = await d(s), i = this.parseTokenResponse(n);
-    return i.refreshToken ?? (i.refreshToken = t.refreshToken), this.storage.setTokens(i), this.setState({ tokens: i }), i;
+    const n = await d(s), o = this.parseTokenResponse(n);
+    return o.refreshToken ?? (o.refreshToken = t.refreshToken), this.storage.setTokens(o), this.setState({ tokens: o }), o;
   }
   /**
    * Fetch the current user's info from Users.au.
@@ -381,7 +395,7 @@ class $ {
     var u, g;
     const s = this.generation, n = (u = this.user) == null ? void 0 : u.sub;
     if (!n || !this.accessToken || this._state.isLoading) throw new a(401);
-    const i = Object.fromEntries(Object.entries(t ?? {}).filter(([f, h]) => ["locale", "timezone", "theme"].includes(f) && h !== void 0));
+    const o = Object.fromEntries(Object.entries(t ?? {}).filter(([f, h]) => ["locale", "timezone", "theme"].includes(f) && h !== void 0));
     for (let f = 0; f < 2; f++) {
       if (s !== this.generation) throw new a(401);
       const h = await fetch(`${this.config.host}/api/interface-preferences`, {
@@ -391,7 +405,7 @@ class $ {
         credentials: "omit",
         signal: AbortSignal.timeout(5e3),
         headers: { Accept: "application/json", Authorization: `Bearer ${this.accessToken}`, ...e === "PATCH" ? { "Content-Type": "application/json" } : {} },
-        ...e === "PATCH" ? { body: JSON.stringify({ ...i, expected_version: r }) } : {}
+        ...e === "PATCH" ? { body: JSON.stringify({ ...o, expected_version: r }) } : {}
       });
       if (s !== this.generation) throw new a(401);
       if (h.status === 401 && f === 0 && ((g = this._state.tokens) != null && g.refreshToken)) {
@@ -454,7 +468,7 @@ export {
   U as IDENTITY_SCOPES,
   w as PREFERENCES_CLAIM,
   a as PreferencesError,
-  $ as UsersauClient,
+  A as UsersauClient,
   y as normalizePreferences,
   b as normalizeUserInfo,
   d as readIdentityJson

@@ -1,4 +1,11 @@
 export interface UsersauConfig {
+    /** Same-origin backend entries for confidential PAR flows. Secrets stay on that backend. */
+    serverRoutes?: {
+        login: string;
+        register: string;
+        account: string;
+        logout: string;
+    };
     /** Your Users.au OAuth client ID */
     clientId: string;
     /** Users.au host URL, e.g. https://auth.users.au */

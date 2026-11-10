@@ -468,6 +468,28 @@ Use `'use client'` on components that call `useUsersau()`. Render browser-depend
 
 ---
 
+## FAQ
+
+### Do I need a client secret in the browser?
+
+No. The client uses the OAuth 2.0 authorization code flow with PKCE for public applications, without a browser client secret.
+
+### Which frameworks are supported?
+
+A framework-agnostic core for vanilla JavaScript/TypeScript, plus Vue 3, React and Next.js integrations. Install with `npm install @users-au/client`.
+
+### Where are tokens stored?
+
+In `localStorage` by default; `sessionStorage` and an isolated in-memory store are also available. `sessionStorage` preserves the PKCE verifier across a same-tab redirect, while memory storage does not survive a full-page navigation.
+
+### Does the client refresh tokens automatically?
+
+No. Refresh is explicit: call `refreshToken()` when you need it. It is not scheduled.
+
+### What do "OAuth state mismatch" and "No PKCE verifier found" mean?
+
+The `state` or the PKCE code verifier saved at login was not found when the callback returned, for example because storage was cleared, the callback opened in another browser or tab, or cookies were blocked. See [Troubleshooting](#troubleshooting).
+
 ## Choose your integration
 
 | Project | Use it when you want to… |

@@ -1,1 +1,2 @@
-export * from './nextjs/index'
+export * from './nextjs/index.js'
+export {}

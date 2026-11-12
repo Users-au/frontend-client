@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import React, { type ReactNode } from 'react';
 import { UsersauClient } from '../core/UsersauClient';
 import type { UsersauConfig, UsersauUser, UsersauTokens, InterfacePreferences, PreferenceChanges } from '../core/types';
 export interface UsersauProviderProps {
@@ -22,7 +22,7 @@ export interface UsersauProviderProps {
  * }
  * ```
  */
-export declare function UsersauProvider({ config, children }: UsersauProviderProps): import("react/jsx-runtime").JSX.Element;
+export declare function UsersauProvider({ config, children }: UsersauProviderProps): React.JSX.Element;
 export interface UseUsersauReturn {
     /** Currently authenticated user, or null */
     user: UsersauUser | null;

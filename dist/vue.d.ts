@@ -1,1 +1,2 @@
-export * from './vue/index'
+export * from './vue/index.js'
+export {}
